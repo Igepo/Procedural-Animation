@@ -12,7 +12,7 @@ public class SpiderController : MonoBehaviour
     // The target we are going to track
     [SerializeField] Transform target;
     // A reference to the spider's head/body
-    [SerializeField] Transform headBone; 
+    [SerializeField] Transform body; 
 
     [SerializeField] float headTrackingSpeed;
 
@@ -32,17 +32,29 @@ public class SpiderController : MonoBehaviour
     Vector3 currentVelocity;
     // We are only doing a rotation around the up axis, so we only use a float here
     float currentAngularVelocity;
+    BodySurfaceFollower bodyFollower;
 
+    private Quaternion groundAlignmentRotation = Quaternion.identity;
+    private Quaternion headTrackingRotation = Quaternion.identity;
 
     void Awake()
     {
+        bodyFollower = GetComponent<BodySurfaceFollower>();
+
         StartCoroutine(LegUpdateCoroutine());
     }
 
     void LateUpdate()
     {
+        if (bodyFollower != null)
+        {
+            groundAlignmentRotation = bodyFollower.AlignWithGround(); // Appel de la méthode de mise à jour du suivi du corps en fonction du terrain
+        }
+
         RootMotionUpdate();
         HeadTrackingUpdate();
+
+        ApplyRotations();
     }
 
     // Only allow diagonal leg pairs to step together
@@ -75,17 +87,18 @@ public class SpiderController : MonoBehaviour
     }
 
 
+
     /// <summary>
     /// Applies head/body tracking
     /// </summary>
-    void HeadTrackingUpdate()
+    Quaternion HeadTrackingUpdate()
     {
         // Store the current head rotation since we will be resetting it
-        Quaternion currentLocalRotation = headBone.localRotation;
-        headBone.localRotation = Quaternion.identity;
+        Quaternion currentLocalRotation = body.localRotation;
+        body.localRotation = Quaternion.identity;
 
-        Vector3 targetWorldLookDir = target.position - headBone.position;
-        Vector3 targetLocalLookDir = headBone.InverseTransformDirection(targetWorldLookDir);
+        Vector3 targetWorldLookDir = target.position - body.position;
+        Vector3 targetLocalLookDir = body.InverseTransformDirection(targetWorldLookDir);
 
         // Get the local rotation by using LookRotation on a local directional vector
         Quaternion targetLocalRotation = Quaternion.LookRotation(targetLocalLookDir, Vector3.up);
@@ -94,25 +107,22 @@ public class SpiderController : MonoBehaviour
         Vector3 targetEulerAngles = targetLocalRotation.eulerAngles;
         targetEulerAngles.x = 0; // Set x to 0
         targetEulerAngles.z = 0; // Set z to 0
-        targetLocalRotation = Quaternion.Euler(targetEulerAngles);
+        headTrackingRotation = Quaternion.Euler(targetEulerAngles);
 
-        // Apply smoothing
-        headBone.localRotation = Quaternion.Slerp(
-          currentLocalRotation,
-          targetLocalRotation,
-          1 - Mathf.Exp(-headTrackingSpeed * Time.deltaTime)
-        );
+        body.localRotation = currentLocalRotation;
+
+        return headTrackingRotation;
     }
+
     void RootMotionUpdate()
     {
         // Get the direction toward our target
-        Vector3 towardTarget = target.position - headBone.transform.position;
+        Vector3 towardTarget = target.position - body.transform.position;
         // Vector toward target on the local XZ plane
         Vector3 towardTargetProjected = Vector3.ProjectOnPlane(towardTarget, transform.up);
         // Get the angle from the gecko's forward direction to the direction toward toward our target
         // Here we get the signed angle around the up vector so we know which direction to turn in
-        float angToTarget = Vector3.SignedAngle(headBone.transform.forward, towardTargetProjected, transform.up);
-        Debug.Log("angToTarget : " + Mathf.Abs(angToTarget));
+        float angToTarget = Vector3.SignedAngle(body.transform.forward, towardTargetProjected, transform.up);
 
         float targetAngularVelocity = 0;
 
@@ -172,42 +182,41 @@ public class SpiderController : MonoBehaviour
         transform.position += currentVelocity * Time.deltaTime;
     }
 
-
-    private void OnDrawGizmos()
+    public void ApplyRotations()
     {
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(headBone.position, target.position);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(headBone.position, headBone.transform.rotation * Vector3.forward);
-
-        //cone
-        // Vérifier si la cible est définie
-        if (target == null) return;
-
-        // Couleur et position de base
-        Gizmos.color = Color.cyan;
-        Vector3 position = transform.position;
-
-        // Direction de l'objet vers la cible
-        Vector3 directionToTarget = (target.position - position).normalized;
-
-        // Utiliser angToTarget pour définir l'angle en radians
-        float angleInRadians = maxAngToTarget * Mathf.Deg2Rad;
-
-        // Calculer les bords du cône d'angle basé sur angToTarget
-        Vector3 leftBoundary = Quaternion.Euler(0, -maxAngToTarget / 2, 0) * directionToTarget;
-        Vector3 rightBoundary = Quaternion.Euler(0, maxAngToTarget / 2, 0) * directionToTarget;
-
-        // Dessiner la ligne vers la cible
-        Gizmos.DrawLine(position, position + directionToTarget * 5);
-
-        // Dessiner les lignes des limites de l'angle
-        Gizmos.DrawLine(position, position + leftBoundary * 5);
-        Gizmos.DrawLine(position, position + rightBoundary * 5);
-
-        // Dessiner un arc pour mieux visualiser l'angle basé sur angToTarget
-        Handles.color = Color.cyan;
-        Handles.DrawWireArc(position, Vector3.up, leftBoundary, maxAngToTarget, 5);
+        body.rotation = Quaternion.Slerp(
+            body.rotation,
+            groundAlignmentRotation * headTrackingRotation,
+            Time.deltaTime * 5f
+        );
     }
+    //private void OnDrawGizmos()
+    //{
+    //    Gizmos.color = Color.green;
+    //    Gizmos.DrawLine(headBone.position, target.position);
+
+    //    Gizmos.color = Color.red;
+    //    Gizmos.DrawRay(headBone.position, headBone.transform.rotation * Vector3.forward);
+
+    //    //cone
+    //    if (target == null) return;
+
+    //    Gizmos.color = Color.cyan;
+    //    Vector3 position = headBone.transform.position;
+
+    //    Vector3 directionToTarget = (target.position - position).normalized;
+
+    //    float angleInRadians = maxAngToTarget * Mathf.Deg2Rad;
+
+    //    Vector3 leftBoundary = Quaternion.Euler(0, -maxAngToTarget / 2, 0) * directionToTarget;
+    //    Vector3 rightBoundary = Quaternion.Euler(0, maxAngToTarget / 2, 0) * directionToTarget;
+
+    //    Gizmos.DrawLine(position, position + directionToTarget * 5);
+
+    //    Gizmos.DrawLine(position, position + leftBoundary * 5);
+    //    Gizmos.DrawLine(position, position + rightBoundary * 5);
+
+    //    Handles.color = Color.cyan;
+    //    Handles.DrawWireArc(position, Vector3.up, leftBoundary, maxAngToTarget, 5);
+    //}
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 public class LegStepper : MonoBehaviour
 {
@@ -16,14 +17,12 @@ public class LegStepper : MonoBehaviour
     // Fraction of the max distance from home we want to overshoot by
     [SerializeField] float stepOvershootFraction;
 
+    // Le temps avant qu'on remette une position par défaut
+    [SerializeField] float restTimer = 3f;
+
     // Is the leg moving?
     public bool Moving;
-
-    void Start()
-    {
-        
-    }
-
+    private Coroutine delayCoroutine;
     public void TryMove()
     {
         // If we are already moving, don't start another move
@@ -43,7 +42,7 @@ public class LegStepper : MonoBehaviour
     // Coroutines must return an IEnumerator
     IEnumerator Move()
     {
-        // Indicate we're moving (used later)
+        // Indicate we're moving
         Moving = true;
 
         // Store the initial conditions
@@ -94,6 +93,25 @@ public class LegStepper : MonoBehaviour
 
         // Done moving
         Moving = false;
+
+        if (delayCoroutine != null)
+        {
+            StopCoroutine(delayCoroutine); // Annule le délai précédent s'il existe
+        }
+        delayCoroutine = StartCoroutine(ResetLegsPosition(restTimer));
+    }
+
+
+    IEnumerator ResetLegsPosition(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // Si la jambe est toujours immobile après 3 secondes, on la remet à la position de repos
+        if (!Moving)
+        {
+            Debug.Log("ismoving");
+            StartCoroutine(Move());
+        }
     }
 
     private void OnDrawGizmos()
