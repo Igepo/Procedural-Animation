@@ -1110,9 +1110,9 @@ MonoBehaviour:
   moveSpeed: 1
   turnAcceleration: 1
   moveAcceleration: 1
-  minDistToTarget: 0
-  maxDistToTarget: 0
-  maxAngToTarget: 15
+  minDistToTarget: 1
+  maxDistToTarget: 2
+  maxAngToTarget: 220
 --- !u!1 &2052983916
 GameObject:
   m_ObjectHideFlags: 0
@@ -2239,7 +2239,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1537009306449740}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 9000000, guid: 5d67c81cdf5717340b0943f1f80dd628, type: 3}
   m_Controller: {fileID: 9100000, guid: 18284206bd755764bbbfcc20b8e703f7, type: 2}
   m_CullingMode: 1

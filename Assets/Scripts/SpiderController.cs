@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEditor;
 using UnityEngine;
 
 public class SpiderController : MonoBehaviour
@@ -105,12 +106,13 @@ public class SpiderController : MonoBehaviour
     void RootMotionUpdate()
     {
         // Get the direction toward our target
-        Vector3 towardTarget = target.position - transform.position;
+        Vector3 towardTarget = target.position - headBone.transform.position;
         // Vector toward target on the local XZ plane
         Vector3 towardTargetProjected = Vector3.ProjectOnPlane(towardTarget, transform.up);
         // Get the angle from the gecko's forward direction to the direction toward toward our target
         // Here we get the signed angle around the up vector so we know which direction to turn in
-        float angToTarget = Vector3.SignedAngle(transform.forward, towardTargetProjected, transform.up);
+        float angToTarget = Vector3.SignedAngle(headBone.transform.forward, towardTargetProjected, transform.up);
+        Debug.Log("angToTarget : " + Mathf.Abs(angToTarget));
 
         float targetAngularVelocity = 0;
 
@@ -170,6 +172,7 @@ public class SpiderController : MonoBehaviour
         transform.position += currentVelocity * Time.deltaTime;
     }
 
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
@@ -177,5 +180,34 @@ public class SpiderController : MonoBehaviour
 
         Gizmos.color = Color.red;
         Gizmos.DrawRay(headBone.position, headBone.transform.rotation * Vector3.forward);
+
+        //cone
+        // Vérifier si la cible est définie
+        if (target == null) return;
+
+        // Couleur et position de base
+        Gizmos.color = Color.cyan;
+        Vector3 position = transform.position;
+
+        // Direction de l'objet vers la cible
+        Vector3 directionToTarget = (target.position - position).normalized;
+
+        // Utiliser angToTarget pour définir l'angle en radians
+        float angleInRadians = maxAngToTarget * Mathf.Deg2Rad;
+
+        // Calculer les bords du cône d'angle basé sur angToTarget
+        Vector3 leftBoundary = Quaternion.Euler(0, -maxAngToTarget / 2, 0) * directionToTarget;
+        Vector3 rightBoundary = Quaternion.Euler(0, maxAngToTarget / 2, 0) * directionToTarget;
+
+        // Dessiner la ligne vers la cible
+        Gizmos.DrawLine(position, position + directionToTarget * 5);
+
+        // Dessiner les lignes des limites de l'angle
+        Gizmos.DrawLine(position, position + leftBoundary * 5);
+        Gizmos.DrawLine(position, position + rightBoundary * 5);
+
+        // Dessiner un arc pour mieux visualiser l'angle basé sur angToTarget
+        Handles.color = Color.cyan;
+        Handles.DrawWireArc(position, Vector3.up, leftBoundary, maxAngToTarget, 5);
     }
 }
