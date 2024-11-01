@@ -21,7 +21,10 @@ public class BodySurfaceFollower : MonoBehaviour
         if (Physics.Raycast(bodyPosition, Vector3.down, out hit, raycastMaxDistance))
         {
             // Le corps doit être à la hauteur indiqué par bodyheight par rapport au point d'impact
-            body.position = hit.point + (bodyHeight* Vector3.up);
+            var initialBodyPosition = body.position;
+            var targetBodyPosition = hit.point + (bodyHeight * Vector3.up);
+            body.position = Vector3.Lerp(initialBodyPosition, targetBodyPosition, 1 - Mathf.Exp(-5 * Time.deltaTime));
+            //body.position = hit.point + (bodyHeight* Vector3.up);
 
             Vector3 normal = hit.normal;
             groundAlignmentRotation = Quaternion.FromToRotation(Vector3.up, normal);

@@ -20,6 +20,8 @@ public class LegStepper : MonoBehaviour
     // Le temps avant qu'on remette une position par défaut
     [SerializeField] float restTimer = 3f;
 
+    [SerializeField] float curveHeightMultiplier = 1.5f;
+
     // Is the leg moving?
     public bool Moving;
     private Coroutine delayCoroutine;
@@ -62,7 +64,7 @@ public class LegStepper : MonoBehaviour
         Vector3 endPoint = homeTransform.position + overshootVector;
 
         Vector3 centerPoint = (startPoint + endPoint) / 2;
-        centerPoint += homeTransform.up * Vector3.Distance(startPoint, endPoint) / 2f;
+        centerPoint += homeTransform.up * Vector3.Distance(startPoint, endPoint) / 2f * curveHeightMultiplier;
 
         // Time since step started
         float timeElapsed = 0;
@@ -76,7 +78,7 @@ public class LegStepper : MonoBehaviour
             float normalizedTime = timeElapsed / moveDuration;
             normalizedTime = Easing.EaseInOutCubic(normalizedTime); // Begin fast, end fast
 
-            // Interpolate position and rotation
+            // Quadratic bezier curve
             targetTransform.position =
               Vector3.Lerp(
                 Vector3.Lerp(startPoint, centerPoint, normalizedTime),
@@ -86,7 +88,6 @@ public class LegStepper : MonoBehaviour
 
             targetTransform.rotation = Quaternion.Slerp(startRot, endRot, normalizedTime);
 
-            // Wait for one frame
             yield return null;
         }
         while (timeElapsed < moveDuration);
