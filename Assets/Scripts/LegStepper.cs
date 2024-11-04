@@ -6,7 +6,7 @@ using static System.Runtime.CompilerServices.RuntimeHelpers;
 public class LegStepper : MonoBehaviour
 {
     // The position and rotation we want to stay in range of
-    [SerializeField] Transform homeTransform;
+    [SerializeField] public Transform homeTransform;
     
     [SerializeField] Transform targetTransform;
     // Stay within this distance of home
@@ -110,7 +110,6 @@ public class LegStepper : MonoBehaviour
         // Si la jambe est toujours immobile après 3 secondes, on la remet à la position de repos
         if (!Moving)
         {
-            Debug.Log("ismoving");
             StartCoroutine(Move());
         }
     }

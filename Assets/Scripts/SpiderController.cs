@@ -1,6 +1,9 @@
 using System.Collections;
+using Unity.Burst.CompilerServices;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class SpiderController : MonoBehaviour
 {
@@ -28,33 +31,58 @@ public class SpiderController : MonoBehaviour
     // If we are above this angle from the target, start turning
     [SerializeField] float maxAngToTarget;
 
+    [SerializeField] bool isFocusOnTarget;
+
+    [SerializeField] private float bodyDistanceFromTheSurface = 0.1f;
+
     // World space velocity
     Vector3 currentVelocity;
     // We are only doing a rotation around the up axis, so we only use a float here
     float currentAngularVelocity;
-    BodySurfaceFollower bodyFollower;
 
     private Quaternion groundAlignmentRotation = Quaternion.identity;
     private Quaternion headTrackingRotation = Quaternion.identity;
 
+    Vector3 normalBody = Vector3.zero;
+    RaycastHit hit;
+
     void Awake()
     {
-        bodyFollower = GetComponent<BodySurfaceFollower>();
-
         StartCoroutine(LegUpdateCoroutine());
     }
 
     void LateUpdate()
     {
-        if (bodyFollower != null)
+        AlignWithGround();
+
+        if (isFocusOnTarget)
         {
-            groundAlignmentRotation = bodyFollower.AlignWithGround(); // Appel de la méthode de mise à jour du suivi du corps en fonction du terrain
+            RootMotionUpdate();
+            HeadTrackingUpdate();
         }
 
-        RootMotionUpdate();
-        HeadTrackingUpdate();
-
         ApplyRotations();
+    }
+
+    // Align the body with the ground
+    void AlignWithGround()
+    {
+        Vector3 leg1Position = frontLeftLegStepper.homeTransform.position;
+        Vector3 leg2Position = frontRightLegStepper.homeTransform.position;
+        Vector3 leg3Position = backLeftLegStepper.homeTransform.position;
+        Vector3 leg4Position = backRightLegStepper.homeTransform.position;
+
+        Vector3 averageLegPosition = (leg1Position + leg2Position + leg3Position + leg4Position) / 4;
+
+        Vector3 normalBody = LegPlaneNormalAverage();
+
+        Vector3 targetBodyPosition = body.position;
+        targetBodyPosition.y = averageLegPosition.y + bodyDistanceFromTheSurface;
+        //var initialBodyPosition = body.position;
+        body.position = Vector3.Lerp(body.position, targetBodyPosition, 1 - Mathf.Exp(-5 * Time.deltaTime));
+
+        // Orientation du body
+        groundAlignmentRotation = Quaternion.FromToRotation(Vector3.up, normalBody);
     }
 
     // Only allow diagonal leg pairs to step together
@@ -91,7 +119,7 @@ public class SpiderController : MonoBehaviour
     /// <summary>
     /// Applies head/body tracking
     /// </summary>
-    Quaternion HeadTrackingUpdate()
+    void HeadTrackingUpdate()
     {
         // Store the current head rotation since we will be resetting it
         Quaternion currentLocalRotation = body.localRotation;
@@ -110,8 +138,6 @@ public class SpiderController : MonoBehaviour
         headTrackingRotation = Quaternion.Euler(targetEulerAngles);
 
         body.localRotation = currentLocalRotation;
-
-        return headTrackingRotation;
     }
 
     void RootMotionUpdate()
@@ -190,6 +216,43 @@ public class SpiderController : MonoBehaviour
             Time.deltaTime * 5f
         );
     }
+
+    public void CalculateAverageNormalFrom4Points(Vector3 A, Vector3 B, Vector3 C, Vector3 D, out Vector3 normalAverage)
+    {
+        Vector3 normalABC = Vector3.Cross(B - A, C - A);
+        Vector3 normalABD = Vector3.Cross(B - A, D - A);
+        Vector3 normalACD = Vector3.Cross(C - A, D - A);
+        Vector3 normalBCD = Vector3.Cross(C - B, D - B);
+
+        normalAverage = normalABC + normalABD + normalACD + normalBCD;
+
+        if (normalAverage != Vector3.zero)
+        {
+            normalAverage = Vector3.Normalize(normalAverage);
+        }
+    }
+
+    public Vector3 LegPlaneNormalAverage()
+    {
+        var normalAverage = Vector3.zero;
+
+        var leg1Position = frontLeftLegStepper.homeTransform.position;
+        var leg2Position = frontRightLegStepper.homeTransform.position;
+        var leg3Position = backLeftLegStepper.homeTransform.position;
+        var leg4Position = backRightLegStepper.homeTransform.position;
+
+        // On se met dans le sens horaire pour avoir une normale positive (leg3 et leg4 inversé)
+        CalculateAverageNormalFrom4Points(leg1Position, leg2Position, leg4Position, leg3Position, out normalAverage);
+        return normalAverage;
+    }
+
+    private void OnDrawGizmos()
+    {
+        normalBody = LegPlaneNormalAverage();
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(body.position, normalBody * 5f);
+    }
+
     //private void OnDrawGizmos()
     //{
     //    Gizmos.color = Color.green;

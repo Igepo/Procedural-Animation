@@ -5,30 +5,35 @@ using UnityEngine;
 
 public class HomePositionPlacement : MonoBehaviour
 {
-    [SerializeField] private float height = 10f;
+    //[SerializeField] private float height = 10f;
+    [SerializeField] private Vector3 raycastDirectionOffset = Vector3.zero;
+    [SerializeField] private Transform homeTransform;
+    [SerializeField] private Transform bodyTransform;
 
     private Vector3 raycastOrigin;
-    RaycastHit hit;
+    private Vector3 raycastDirection;
+    private RaycastHit hit;
+    private Vector3 initialPosition;
 
     void Start()
     {
-        
     }
 
     void Update()
     {
-        Vector3 homePosition = transform.position;
-
-        raycastOrigin = homePosition + Vector3.up * height;
-        if (Physics.Raycast(raycastOrigin, Vector3.down, out hit, Mathf.Infinity))
+        //raycastOrigin = initialPosition + Vector3.up * height;
+        raycastOrigin = transform.position;
+        //raycastDirection = bodyTransform.TransformDirection(Vector3.down + raycastDirectionOffset).normalized;
+        raycastDirection = (transform.TransformDirection(Vector3.down) + raycastDirectionOffset).normalized;
+        if (Physics.Raycast(raycastOrigin, raycastDirection, out hit, Mathf.Infinity))
         {
-            transform.position = hit.point;
+            homeTransform.position = hit.point;
         }
     }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
-        Gizmos.DrawLine(raycastOrigin, hit.point);
+        Gizmos.DrawLine(raycastOrigin, raycastOrigin + raycastDirection);
     }
 }
