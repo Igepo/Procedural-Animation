@@ -8,7 +8,6 @@ public class HomePositionPlacement : MonoBehaviour
     //[SerializeField] private float height = 10f;
     [SerializeField] private Vector3 raycastDirectionOffset = Vector3.zero;
     [SerializeField] private Transform homeTransform;
-    [SerializeField] private Transform bodyTransform;
 
     private Vector3 raycastOrigin;
     private Vector3 raycastDirection;
@@ -22,10 +21,10 @@ public class HomePositionPlacement : MonoBehaviour
     void Update()
     {
         //raycastOrigin = initialPosition + Vector3.up * height;
-        raycastOrigin = transform.position;
+        //raycastOrigin = transform.position;
         //raycastDirection = bodyTransform.TransformDirection(Vector3.down + raycastDirectionOffset).normalized;
-        raycastDirection = (transform.TransformDirection(Vector3.down) + raycastDirectionOffset).normalized;
-        if (Physics.Raycast(raycastOrigin, raycastDirection, out hit, Mathf.Infinity))
+        raycastDirection = -(transform.up + raycastDirectionOffset).normalized;
+        if (Physics.Raycast(transform.position, raycastDirection, out hit, Mathf.Infinity))
         {
             homeTransform.position = hit.point;
         }
@@ -34,6 +33,6 @@ public class HomePositionPlacement : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
-        Gizmos.DrawLine(raycastOrigin, raycastOrigin + raycastDirection);
+        Gizmos.DrawLine(transform.position, transform.position + raycastDirection);
     }
 }

@@ -67,22 +67,26 @@ public class SpiderController : MonoBehaviour
     // Align the body with the ground
     void AlignWithGround()
     {
-        Vector3 leg1Position = frontLeftLegStepper.homeTransform.position;
-        Vector3 leg2Position = frontRightLegStepper.homeTransform.position;
-        Vector3 leg3Position = backLeftLegStepper.homeTransform.position;
-        Vector3 leg4Position = backRightLegStepper.homeTransform.position;
+        // Orientation du body
+        Vector3 normalBody = LegPlaneNormalAverage();
+        groundAlignmentRotation = Quaternion.FromToRotation(Vector3.up, normalBody);
+
+        //// Position du body
+        Vector3 leg1Position = frontLeftLegStepper.gameObject.transform.position;
+        Vector3 leg2Position = frontRightLegStepper.gameObject.transform.position;
+        Vector3 leg3Position = backLeftLegStepper.gameObject.transform.position;
+        Vector3 leg4Position = backRightLegStepper.gameObject.transform.position;
 
         Vector3 averageLegPosition = (leg1Position + leg2Position + leg3Position + leg4Position) / 4;
+        Debug.DrawLine(body.position, averageLegPosition, Color.black);
+        Debug.Log("Distance actuelle du corps à la position moyenne des jambes: " + Vector3.Distance(body.position, averageLegPosition));
 
-        Vector3 normalBody = LegPlaneNormalAverage();
-
+        //Vector3 directionToBody = (body.position - averageLegPosition).normalized;
+        //Vector3 clampedBodyPosition = averageLegPosition + directionToBody * bodyDistanceFromTheSurface;
+        //body.position = Vector3.Lerp(body.position, clampedBodyPosition, 1 - Mathf.Exp(-5 * Time.deltaTime));
         Vector3 targetBodyPosition = body.position;
         targetBodyPosition.y = averageLegPosition.y + bodyDistanceFromTheSurface;
-        //var initialBodyPosition = body.position;
         body.position = Vector3.Lerp(body.position, targetBodyPosition, 1 - Mathf.Exp(-5 * Time.deltaTime));
-
-        // Orientation du body
-        groundAlignmentRotation = Quaternion.FromToRotation(Vector3.up, normalBody);
     }
 
     // Only allow diagonal leg pairs to step together
@@ -236,22 +240,22 @@ public class SpiderController : MonoBehaviour
     {
         var normalAverage = Vector3.zero;
 
-        var leg1Position = frontLeftLegStepper.homeTransform.position;
-        var leg2Position = frontRightLegStepper.homeTransform.position;
-        var leg3Position = backLeftLegStepper.homeTransform.position;
-        var leg4Position = backRightLegStepper.homeTransform.position;
+        var leg1Position = frontLeftLegStepper.gameObject.transform.position;
+        var leg2Position = frontRightLegStepper.gameObject.transform.position;
+        var leg3Position = backLeftLegStepper.gameObject.transform.position;
+        var leg4Position = backRightLegStepper.gameObject.transform.position;
 
         // On se met dans le sens horaire pour avoir une normale positive (leg3 et leg4 inversé)
         CalculateAverageNormalFrom4Points(leg1Position, leg2Position, leg4Position, leg3Position, out normalAverage);
         return normalAverage;
     }
 
-    private void OnDrawGizmos()
-    {
-        normalBody = LegPlaneNormalAverage();
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(body.position, normalBody * 5f);
-    }
+    //private void OnDrawGizmos()
+    //{
+    //    normalBody = LegPlaneNormalAverage();
+    //    Gizmos.color = Color.red;
+    //    Gizmos.DrawRay(body.position, normalBody * 5f);
+    //}
 
     //private void OnDrawGizmos()
     //{
