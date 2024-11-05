@@ -10,3 +10,4 @@ Spider Model with procedural animation :
 ![Spider Dance](https://github.com/user-attachments/assets/2b3bb24e-15c3-45db-a634-37b99b7bd548)
 
 
+![Spider Sphere](https://github.com/user-attachments/assets/408145ce-41e2-462c-95e1-ffc451970f0c)
