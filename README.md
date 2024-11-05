@@ -6,6 +6,8 @@ https://weaverdev.io/projects/bonehead-procedural-animation/
 
 https://assetstore.unity.com/packages/tools/animation/fast-ik-139972
 
+Model : https://assetstore.unity.com/packages/3d/characters/robots/spider-orange-181154
+
 Spider Model with procedural animation :
 ![Spider Dance](https://github.com/user-attachments/assets/2b3bb24e-15c3-45db-a634-37b99b7bd548)
 
